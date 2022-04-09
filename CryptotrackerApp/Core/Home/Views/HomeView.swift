@@ -11,16 +11,21 @@ struct HomeView: View {
     
     @EnvironmentObject private var vm : HomeViewModel
     @State private var showPortfolio : Bool = false
+    @State private var showPortfolioView : Bool = false
     
     var body: some View {
         ZStack { // background layer
             Color.theme.background
                 .ignoresSafeArea()
+                .sheet(isPresented: $showPortfolioView, content: {
+                    PortfolioView()
+                        .environmentObject(vm) // 부모뷰의 environmentObject를 다음과 같이 전달 가능하다.
+                })
             
             //content layer
             VStack {
                 homeHeader
-                
+                HomeStatsView(showPortfolio: $showPortfolio)
                 SearchBarView(searchText: $vm.searchText)
                 
                 columnTitles
@@ -58,6 +63,11 @@ extension HomeView {
         HStack {
             CircleButtonView(iconName: showPortfolio ? "plus" : "info")
                 .animation(.none)
+                .onTapGesture {
+                    if showPortfolio {
+                        showPortfolioView.toggle()
+                    }
+                }
                 .background(
                  CircleButtonAnimationView(animate: $showPortfolio)
                 )
