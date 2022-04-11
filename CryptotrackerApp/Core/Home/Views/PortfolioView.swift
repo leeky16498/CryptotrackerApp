@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PortfolioView: View {
     
+    @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var vm : HomeViewModel
     @State private var selectedCoin : CoinModel?
     @State private var quantityText : String = ""
@@ -32,19 +33,7 @@ struct PortfolioView: View {
                     xmarkButton()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "checkmark")
-                            .opacity(showCheckMark ? 1.0 : 0.0)
-                        Button(action: {
-                            
-                        }, label: {
-                            Text("Save".uppercased())
-                        })
-                        .opacity(
-                            (selectedCoin != nil && selectedCoin?.currentHoldings != Double(quantityText)) ? 1.0 : 0.0
-                        )
-                    }
-                    .font(.headline)
+                    trailingNavBarButton
                 }
             }
         }
@@ -70,12 +59,12 @@ extension PortfolioView {
     private var coinLogoList : some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(spacing: 10) {
-                ForEach(vm.allCoins) { coin in
+                ForEach(vm.searchText.isEmpty ? vm.portfolioCoins : vm.allCoins) { coin in
                     CoinLogoView(coin: coin)
                         .frame(width : 75)
                         .onTapGesture {
                             withAnimation(.easeIn) {
-                                selectedCoin = coin
+                                updateSelectedCoin(coin: coin)
                             }
                         }
                         .padding(4)
@@ -124,4 +113,60 @@ extension PortfolioView {
         .font(.headline)
     }
     
+    private var trailingNavBarButton : some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark")
+                .opacity(showCheckMark ? 1.0 : 0.0)
+            Button(action: {
+                saveButtonPressed()
+            }, label: {
+                Text("Save".uppercased())
+            })
+            .opacity(
+                (selectedCoin != nil && selectedCoin?.currentHoldings != Double(quantityText)) ? 1.0 : 0.0
+            )
+        }
+        .font(.headline)
+    }
+    
+    private func saveButtonPressed() {
+        guard
+            let coin = selectedCoin,
+            let amount = Double(quantityText)
+        else {return}
+        
+        //save portfolio
+        vm.updatePortfolio(coin: coin, amount: amount)
+        
+        //show checkmark
+        withAnimation(.easeIn) {
+            showCheckMark = true
+            removeSelectedCoin()
+        }
+        
+        //hide keyboard
+        UIApplication.shared.endEditing()
+        //hide checkmark
+        DispatchQueue.main.asyncAfter(deadline: .now()+2.0) {
+            withAnimation(.easeOut) {
+                showCheckMark = false
+            }
+        }
+    }
+    
+    private func removeSelectedCoin() {
+        selectedCoin = nil
+        vm.searchText = ""
+    }
+    
+    private func updateSelectedCoin(coin : CoinModel) {
+        selectedCoin = coin
+        
+        if let portfolioCoin = vm.portfolioCoins.first(where: {$0.id == coin.id}),
+           let amount = portfolioCoin.currentHoldings {
+                quantityText = "\(amount)"
+            } else {
+                quantityText = ""
+            }
+    }
 }
