@@ -32,5 +32,4 @@ class CoinDataService {
 //            .store(in: &cancellable)
         // 다음과 같이 섭스크립터를 생성해서 캔슬해주는 방법도 있음.
     }
-    
 }

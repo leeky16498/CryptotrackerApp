@@ -12,6 +12,8 @@ struct HomeView: View {
     @EnvironmentObject private var vm : HomeViewModel
     @State private var showPortfolio : Bool = false
     @State private var showPortfolioView : Bool = false
+    @State private var selectedCoin : CoinModel?
+    @State private var showDetailView : Bool = false
     
     var body: some View {
         ZStack { // background layer
@@ -43,7 +45,15 @@ struct HomeView: View {
                 Spacer()
 
             }//vst
-        }
+        } //zst
+        .background(
+            NavigationLink(
+                destination: DetailLoadingView(coin: $selectedCoin),
+                isActive: $showDetailView,
+                label: {
+                    EmptyView()
+                })
+        )
     }
 }
 
@@ -94,9 +104,18 @@ extension HomeView {
             ForEach(vm.allCoins) { coin in
                 CoinRowView(coin: coin, showHoldingsColumn: false)
                     .listRowInsets(.init(top: 10, leading: 0, bottom: 10, trailing: 10))
+                    .onTapGesture {
+                        self.segue(coin: coin)
+                    }
             }
+            .listRowSeparator(.hidden)
         }
         .listStyle(.plain)
+    }
+    
+    private func segue(coin : CoinModel) {
+        selectedCoin = coin
+        showDetailView.toggle()
     }
     
     private var portfolioCoinList : some View {
@@ -104,6 +123,9 @@ extension HomeView {
             ForEach(vm.portfolioCoins) { coin in
                 CoinRowView(coin: coin, showHoldingsColumn: true)
                     .listRowInsets(.init(top: 10, leading: 0, bottom: 10, trailing: 10))
+                    .onTapGesture {
+                        self.segue(coin: coin)
+                    }
             }
         }
         .listStyle(.plain)
@@ -116,6 +138,11 @@ extension HomeView {
                 Image(systemName: "chevron.down")
                     .opacity(vm.sortOption == .rank || vm.sortOption == .rankReversed ? 1.0 : 0.0)
                     .rotationEffect(.degrees(vm.sortOption == .rank ? 0 : 180))
+            }
+            .onTapGesture {
+                withAnimation {
+                    vm.sortOption = vm.sortOption == .rank ? .rankReversed : .rank
+                }
             }
             
             Spacer()
